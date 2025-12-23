@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "func": "func start",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"No tests defined\""
   },
   "dependencies": {
     "mssql": "^10.0.0",
