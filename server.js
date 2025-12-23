@@ -16,6 +16,7 @@ const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:3000",
   process.env.FRONTEND_URL,
+  "https://lmsfrontend-afhjb9drhtd2abaa.canadacentral-01.azurewebsites.net",
   "https://lms-frontend.azurestaticapps.net",
 ].filter(Boolean);
 
