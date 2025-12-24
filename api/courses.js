@@ -3,17 +3,14 @@
 const express = require('express')
 const sql = require('mssql')
 const { authenticate } = require('../middleware/auth')
+const { getPool } = require('../db/pool')
 
 const router = express.Router()
-
-// Get connection string
-const connectionString = process.env.AZURE_SQL_CONNECTION_STRING || 
-  'Server=tcp:lmsstorage.database.windows.net,1433;Initial Catalog=sessionslms;Persist Security Info=False;User ID=lmsadmin;Password=Lms@2025;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;'
 
 // Get all courses (Tutors see their own, Admins see all)
 router.get('/', authenticate, async (req, res) => {
   try {
-    const pool = await sql.connect(connectionString)
+    const pool = await getPool()
     
     // Check if Courses table exists
     const tableCheck = await pool.request().query(`
@@ -96,7 +93,7 @@ router.get('/', authenticate, async (req, res) => {
 // Get single course
 router.get('/:id', authenticate, async (req, res) => {
   try {
-    const pool = await sql.connect(connectionString)
+    const pool = await getPool()
     
     const result = await pool
       .request()
@@ -160,7 +157,7 @@ router.post('/', authenticate, async (req, res) => {
       return res.status(403).json({ message: 'Access denied. Only Tutors and Admins can create courses.' })
     }
 
-    const pool = await sql.connect(connectionString)
+    const pool = await getPool()
 
     // Verify user exists
     const userCheck = await pool
@@ -228,7 +225,7 @@ router.put('/:id', authenticate, async (req, res) => {
   try {
     const { title, description, thumbnail, category_id, sub_category_id, status } = req.body
 
-    const pool = await sql.connect(connectionString)
+    const pool = await getPool()
 
     // First, check if course exists and get author_id
     const courseCheck = await pool
@@ -308,7 +305,7 @@ router.put('/:id', authenticate, async (req, res) => {
 // Delete course (Tutors can delete their own, Admins can delete all)
 router.delete('/:id', authenticate, async (req, res) => {
   try {
-    const pool = await sql.connect(connectionString)
+    const pool = await getPool()
 
     // First, check if course exists and get author_id
     const courseCheck = await pool

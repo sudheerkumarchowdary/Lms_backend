@@ -3,17 +3,14 @@
 const express = require('express')
 const sql = require('mssql')
 const { authenticate, authorize } = require('../middleware/auth')
+const { getPool } = require('../db/pool')
 
 const router = express.Router()
-
-// Get connection string
-const connectionString = process.env.AZURE_SQL_CONNECTION_STRING || 
-  'Server=tcp:lmsstorage.database.windows.net,1433;Initial Catalog=sessionslms;Persist Security Info=False;User ID=lmsadmin;Password=Lms@2025;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;'
 
 // Get all batches (Admin only)
 router.get('/', authenticate, authorize('Admin'), async (req, res) => {
   try {
-    const pool = await sql.connect(connectionString)
+    const pool = await getPool()
     
     const result = await pool.request().query(`
       SELECT b.*, u.name as created_by_name,
@@ -33,7 +30,7 @@ router.get('/', authenticate, authorize('Admin'), async (req, res) => {
 // Get single batch
 router.get('/:id', authenticate, authorize('Admin'), async (req, res) => {
   try {
-    const pool = await sql.connect(connectionString)
+    const pool = await getPool()
     
     const result = await pool
       .request()
@@ -65,7 +62,7 @@ router.post('/', authenticate, authorize('Admin'), async (req, res) => {
       return res.status(400).json({ message: 'Name and start date are required' })
     }
 
-    const pool = await sql.connect(connectionString)
+    const pool = await getPool()
 
     const result = await pool
       .request()
@@ -94,7 +91,7 @@ router.put('/:id', authenticate, authorize('Admin'), async (req, res) => {
   try {
     const { name, description, start_date, end_date, capacity, status } = req.body
 
-    const pool = await sql.connect(connectionString)
+    const pool = await getPool()
 
     const result = await pool
       .request()
@@ -132,7 +129,7 @@ router.put('/:id', authenticate, authorize('Admin'), async (req, res) => {
 // Delete batch (Admin only)
 router.delete('/:id', authenticate, authorize('Admin'), async (req, res) => {
   try {
-    const pool = await sql.connect(connectionString)
+    const pool = await getPool()
 
     const result = await pool
       .request()

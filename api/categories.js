@@ -3,17 +3,14 @@
 const express = require('express')
 const sql = require('mssql')
 const { authenticate, authorize } = require('../middleware/auth')
+const { getPool } = require('../db/pool')
 
 const router = express.Router()
-
-// Get connection string
-const connectionString = process.env.AZURE_SQL_CONNECTION_STRING || 
-  'Server=tcp:lmsstorage.database.windows.net,1433;Initial Catalog=sessionslms;Persist Security Info=False;User ID=lmsadmin;Password=Lms@2025;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;'
 
 // Get all categories (Admin only)
 router.get('/', authenticate, authorize('Admin'), async (req, res) => {
   try {
-    const pool = await sql.connect(connectionString)
+    const pool = await getPool()
     
     // Get categories with counts of subcategories, subjects, and topics
     const result = await pool.request().query(`
@@ -38,7 +35,7 @@ router.get('/', authenticate, authorize('Admin'), async (req, res) => {
     console.error('Get categories error:', error)
     // If hierarchy tables don't exist, return categories without counts
     try {
-      const pool = await sql.connect(connectionString)
+      const pool = await getPool()
       const result = await pool.request().query(`
         SELECT c.*, u.name as created_by_name,
                0 as subCategories_count,
@@ -58,7 +55,7 @@ router.get('/', authenticate, authorize('Admin'), async (req, res) => {
 // Get single category
 router.get('/:id', authenticate, authorize('Admin'), async (req, res) => {
   try {
-    const pool = await sql.connect(connectionString)
+    const pool = await getPool()
     
     const result = await pool
       .request()
@@ -90,7 +87,7 @@ router.post('/', authenticate, authorize('Admin'), async (req, res) => {
       return res.status(400).json({ message: 'Category name is required' })
     }
 
-    const pool = await sql.connect(connectionString)
+    const pool = await getPool()
 
     // Verify the user exists in sessionslms database
     const userCheck = await pool
@@ -154,7 +151,7 @@ router.put('/:id', authenticate, authorize('Admin'), async (req, res) => {
   try {
     const { name, description, status } = req.body
 
-    const pool = await sql.connect(connectionString)
+    const pool = await getPool()
 
     const result = await pool
       .request()
@@ -186,7 +183,7 @@ router.put('/:id', authenticate, authorize('Admin'), async (req, res) => {
 // Delete category (Admin only)
 router.delete('/:id', authenticate, authorize('Admin'), async (req, res) => {
   try {
-    const pool = await sql.connect(connectionString)
+    const pool = await getPool()
 
     const result = await pool
       .request()

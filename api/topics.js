@@ -3,18 +3,15 @@
 const express = require('express')
 const sql = require('mssql')
 const { authenticate, authorize } = require('../middleware/auth')
+const { getPool } = require('../db/pool')
 
 const router = express.Router()
-
-// Get connection string
-const connectionString = process.env.AZURE_SQL_CONNECTION_STRING || 
-  'Server=tcp:lmsstorage.database.windows.net,1433;Initial Catalog=sessionslms;Persist Security Info=False;User ID=lmsadmin;Password=Lms@2025;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;'
 
 // Get all topics (optionally filtered by subject_id)
 router.get('/', authenticate, authorize('Admin'), async (req, res) => {
   try {
     const { subject_id } = req.query
-    const pool = await sql.connect(connectionString)
+    const pool = await getPool()
     
     let query = `
       SELECT t.*, 
@@ -46,7 +43,7 @@ router.get('/', authenticate, authorize('Admin'), async (req, res) => {
 // Get single topic
 router.get('/:id', authenticate, authorize('Admin'), async (req, res) => {
   try {
-    const pool = await sql.connect(connectionString)
+    const pool = await getPool()
     
     const result = await pool
       .request()
@@ -81,7 +78,7 @@ router.post('/', authenticate, authorize('Admin'), async (req, res) => {
       return res.status(400).json({ message: 'Name and subject_id are required' })
     }
 
-    const pool = await sql.connect(connectionString)
+    const pool = await getPool()
 
     // Verify user exists
     const userCheck = await pool
@@ -135,7 +132,7 @@ router.put('/:id', authenticate, authorize('Admin'), async (req, res) => {
   try {
     const { name, description, status } = req.body
 
-    const pool = await sql.connect(connectionString)
+    const pool = await getPool()
 
     const result = await pool
       .request()
@@ -167,7 +164,7 @@ router.put('/:id', authenticate, authorize('Admin'), async (req, res) => {
 // Delete topic (Admin only)
 router.delete('/:id', authenticate, authorize('Admin'), async (req, res) => {
   try {
-    const pool = await sql.connect(connectionString)
+    const pool = await getPool()
 
     const result = await pool
       .request()

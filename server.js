@@ -8,7 +8,7 @@ const jwt = require("jsonwebtoken");
 const cors = require("cors");
 
 const app = express();
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 3001;
 
 // Middleware
 // CORS configuration - allow frontend domains
@@ -50,11 +50,7 @@ app.use(
 );
 app.use(express.json());
 
-// Get connection string from environment or use default
-// Updated to use sessionslms database
-const connectionString =
-  process.env.AZURE_SQL_CONNECTION_STRING ||
-  "Server=tcp:lmsstorage.database.windows.net,1433;Initial Catalog=sessionslms;Persist Security Info=False;User ID=lmsadmin;Password=Lms@2025;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
+const { getPool } = require('./db/pool');
 
 const JWT_SECRET =
   process.env.JWT_SECRET || "your-secret-key-change-in-production";
@@ -72,24 +68,13 @@ app.post("/api/auth/login", async (req, res) => {
 
     console.log("Login attempt for:", username);
 
-    // Connect to SQL Database
-    let pool;
-    try {
-      pool = await sql.connect(connectionString);
-      console.log("Database connected successfully");
-    } catch (dbError) {
-      console.error("Database connection error:", dbError.message);
-      return res.status(500).json({
-        message:
-          "Database connection failed. Please check your SQL database settings.",
-        error: dbError.message,
-      });
-    }
+    // Get connection pool
+    const dbPool = await getPool();
 
     // Find user
     let result;
     try {
-      result = await pool
+      result = await dbPool
         .request()
         .input("username", sql.NVarChar, username)
         .query(
@@ -147,13 +132,6 @@ app.post("/api/auth/login", async (req, res) => {
       message: "Server error. Please try again later.",
       error: error.message,
     });
-  } finally {
-    // Close database connection
-    try {
-      await sql.close();
-    } catch (closeError) {
-      // Ignore close errors
-    }
   }
 });
 
@@ -172,11 +150,11 @@ app.post("/api/auth/register", async (req, res) => {
         .json({ message: "Password must be at least 6 characters" });
     }
 
-    // Connect to SQL Database
-    const pool = await sql.connect(connectionString);
+    // Get connection pool
+    const dbPool = await getPool();
 
     // Check if user already exists
-    const checkUser = await pool
+    const checkUser = await dbPool
       .request()
       .input("username", sql.NVarChar, username)
       .input("email", sql.NVarChar, email)
@@ -195,7 +173,7 @@ app.post("/api/auth/register", async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Insert new user
-    const insertResult = await pool
+    const insertResult = await dbPool
       .request()
       .input("username", sql.NVarChar, username)
       .input("email", sql.NVarChar, email)
@@ -223,7 +201,10 @@ app.post("/api/auth/register", async (req, res) => {
     });
   } catch (error) {
     console.error("Registration error:", error);
-    res.status(500).json({ message: "Server error. Please try again later." });
+    res.status(500).json({ 
+      message: "Server error. Please try again later.",
+      error: error.message 
+    });
   }
 });
 

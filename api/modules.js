@@ -3,17 +3,14 @@
 const express = require('express')
 const sql = require('mssql')
 const { authenticate, authorize } = require('../middleware/auth')
+const { getPool } = require('../db/pool')
 
 const router = express.Router()
-
-// Get connection string
-const connectionString = process.env.AZURE_SQL_CONNECTION_STRING || 
-  'Server=tcp:lmsstorage.database.windows.net,1433;Initial Catalog=sessionslms;Persist Security Info=False;User ID=lmsadmin;Password=Lms@2025;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;'
 
 // Get all modules (Mentors can see their own, Admins can see all)
 router.get('/', authenticate, async (req, res) => {
   try {
-    const pool = await sql.connect(connectionString)
+    const pool = await getPool()
     
     let query = `
       SELECT m.*, u.name as mentor_name
@@ -40,7 +37,7 @@ router.get('/', authenticate, async (req, res) => {
 // Get single module
 router.get('/:id', authenticate, async (req, res) => {
   try {
-    const pool = await sql.connect(connectionString)
+    const pool = await getPool()
     
     const result = await pool
       .request()
@@ -79,7 +76,7 @@ router.post('/', authenticate, authorize('Mentor'), async (req, res) => {
       return res.status(400).json({ message: 'Title is required' })
     }
 
-    const pool = await sql.connect(connectionString)
+    const pool = await getPool()
 
     const result = await pool
       .request()
@@ -109,7 +106,7 @@ router.put('/:id', authenticate, authorize('Mentor'), async (req, res) => {
   try {
     const { title, description, content, course_id, duration, order_number, status } = req.body
 
-    const pool = await sql.connect(connectionString)
+    const pool = await getPool()
 
     // First check if module exists and belongs to this mentor
     const checkResult = await pool
@@ -160,7 +157,7 @@ router.put('/:id', authenticate, authorize('Mentor'), async (req, res) => {
 // Delete module (Mentor only - can only delete their own)
 router.delete('/:id', authenticate, authorize('Mentor'), async (req, res) => {
   try {
-    const pool = await sql.connect(connectionString)
+    const pool = await getPool()
 
     // First check if module exists and belongs to this mentor
     const checkResult = await pool

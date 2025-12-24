@@ -3,17 +3,14 @@
 const express = require('express')
 const sql = require('mssql')
 const { authenticate, authorize } = require('../middleware/auth')
+const { getPool } = require('../db/pool')
 
 const router = express.Router()
-
-// Get connection string
-const connectionString = process.env.AZURE_SQL_CONNECTION_STRING || 
-  'Server=tcp:lmsstorage.database.windows.net,1433;Initial Catalog=sessionslms;Persist Security Info=False;User ID=lmsadmin;Password=Lms@2025;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;'
 
 // Get all sessions (Admin only)
 router.get('/', authenticate, authorize('Admin'), async (req, res) => {
   try {
-    const pool = await sql.connect(connectionString)
+    const pool = await getPool()
     
     // Try with JOINs first, fallback to simple query if tables don't exist
     let result
@@ -47,7 +44,7 @@ router.get('/', authenticate, authorize('Admin'), async (req, res) => {
 // Get single session
 router.get('/:id', authenticate, authorize('Admin'), async (req, res) => {
   try {
-    const pool = await sql.connect(connectionString)
+    const pool = await getPool()
     
     const result = await pool
       .request()
@@ -80,7 +77,7 @@ router.post('/', authenticate, authorize('Admin'), async (req, res) => {
       return res.status(400).json({ message: 'Title and date are required' })
     }
 
-    const pool = await sql.connect(connectionString)
+    const pool = await getPool()
 
     // Parse date - handle both date string and datetime string
     let sessionDate
@@ -170,7 +167,7 @@ router.put('/:id', authenticate, authorize('Admin'), async (req, res) => {
   try {
     const { title, description, tutor_id, batch_id, date, time, duration, status, meeting_link } = req.body
 
-    const pool = await sql.connect(connectionString)
+    const pool = await getPool()
 
     const result = await pool
       .request()
@@ -214,7 +211,7 @@ router.put('/:id', authenticate, authorize('Admin'), async (req, res) => {
 // Delete session (Admin only)
 router.delete('/:id', authenticate, authorize('Admin'), async (req, res) => {
   try {
-    const pool = await sql.connect(connectionString)
+    const pool = await getPool()
 
     const result = await pool
       .request()
